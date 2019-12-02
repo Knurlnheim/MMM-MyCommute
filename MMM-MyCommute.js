@@ -1,7 +1,7 @@
 
 /*********************************
 
-  Magic Mirror Module: 
+  Magic Mirror Module:
   MMM-MyCommute
   By Jeff Clarke
 
@@ -10,7 +10,7 @@
   https://github.com/domsen123/mrx-work-traffic
 
   MIT Licensed
- 
+
 *********************************/
 
 Module.register('MMM-MyCommute', {
@@ -58,10 +58,10 @@ Module.register('MMM-MyCommute', {
   },
 
   // Define required scripts.
-  getScripts: function() {
-    return ["moment.js", this.file("node_modules/moment-duration-format/lib/moment-duration-format.js")];
-  },
-  
+//  getScripts: function() {
+  //  return ["moment.js", this.file("node_modules/moment-duration-format/lib/moment-duration-format.js")];
+//  },
+
   // Define required styles.
   getStyles: function () {
     return ["MMM-MyCommute.css", "font-awesome.css"];
@@ -116,7 +116,7 @@ Module.register('MMM-MyCommute', {
     'gondola_lift':     'gondola',
     'funicular':        'gondola',
     'other':            'streetcar'
-  },  
+  },
 
   start: function() {
 
@@ -133,7 +133,7 @@ Module.register('MMM-MyCommute', {
     setInterval(function() {
       self.getData();
     }, this.config.pollFrequency);
-      
+
   },
 
   /*
@@ -155,7 +155,21 @@ Module.register('MMM-MyCommute', {
 
   */
   isInWindow: function(start, end, hideDays) {
-
+    var now = new Date();
+    var startTimeSplit = start.split(":");
+    var endTimeSplit = end.split(":");
+    var startTime = new Date();
+    startTime.setHours(startTimeSplit[0], startTimeSplit[1]);
+    var endTime = new Date();
+    endTime.setHours(endTimeSplit[0], endTimeSplit[1]);
+    if ( (now < startTime) || (now > endTime) ) {
+    //  Log.log("now < start or now > end");
+      return false;
+    } else if ( hideDays.indexOf( now.getDay() ) != -1) {
+    //  Log.log("day hidden");
+      return false;
+    }
+/*
     var now = moment();
     var startTimeSplit = start.split(":");
     var endTimeSplit = end.split(":");
@@ -165,9 +179,10 @@ Module.register('MMM-MyCommute', {
     if ( now.isBefore(startTime) || now.isAfter(endTime) ) {
       return false;
     } else if ( hideDays.indexOf( now.day() ) != -1) {
+    //} else if ( hideDays.indexOf( now.getDay() ) != -1) {
       return false;
     }
-
+*/
     return true;
   },
 
@@ -188,13 +203,13 @@ Module.register('MMM-MyCommute', {
         if ( this.isInWindow( destStartTime, destEndTime, destHideDays ) ) {
           var url = 'https://maps.googleapis.com/maps/api/directions/json' + this.getParams(d);
           destinations.push({ url:url, config: d});
-          //console.log(url);          
+          //console.log(url);
         }
 
       }
       this.inWindow = true;
 
-      if (destinations.length > 0) {        
+      if (destinations.length > 0) {
         this.sendSocketNotification("GOOGLE_TRAFFIC_GET", {destinations: destinations, instanceId: this.identifier});
       } else {
         this.hide(1000, {lockString: this.identifier});
@@ -222,7 +237,7 @@ Module.register('MMM-MyCommute', {
     var mode = 'driving';
     if (dest.mode && this.travelModes.indexOf(dest.mode) != -1) {
       mode = dest.mode;
-    } 
+    }
     params += '&mode=' + mode;
 
     //transit mode if travelMode = 'transit'
@@ -237,7 +252,7 @@ Module.register('MMM-MyCommute', {
       if (sanitizedTransitModes.length > 0) {
         params += '&transit_mode=' + sanitizedTransitModes;
       }
-    } 
+    }
     if (dest.alternatives == true) {
       params += '&alternatives=true';
     }
@@ -248,7 +263,7 @@ Module.register('MMM-MyCommute', {
         waypoints[i] = "via:" + encodeURIComponent(waypoints[i]);
       }
       params += '&waypoints=' + waypoints.join("|");
-    } 
+    }
 
     //avoid
     if (dest.avoid) {
@@ -269,7 +284,7 @@ Module.register('MMM-MyCommute', {
 
     return params;
 
-  },  
+  },
 
   svgIconFactory: function(glyph) {
 
@@ -278,7 +293,7 @@ Module.register('MMM-MyCommute', {
     var use = document.createElementNS('http://www.w3.org/2000/svg', "use");
     use.setAttributeNS("http://www.w3.org/1999/xlink", "href", "modules/MMM-MyCommute/icon_sprite.svg#" + glyph);
     svg.appendChild(use);
-    
+
     return(svg);
   },
 
@@ -287,10 +302,10 @@ Module.register('MMM-MyCommute', {
     var timeEl = document.createElement("span");
     timeEl.classList.add("travel-time");
     if (timeInTraffic != null) {
-      timeEl.innerHTML = moment.duration(Number(timeInTraffic), "seconds").format(this.config.travelTimeFormat, {trim: this.config.travelTimeFormatTrim});
-
+      //timeEl.innerHTML = moment.duration(Number(timeInTraffic), "seconds").format(this.config.travelTimeFormat, {trim: this.config.travelTimeFormatTrim});
+      timeEl.innerHTML = Math.floor( Number(timeInTraffic) /60) + " min";
       var variance = timeInTraffic / time;
-      if (this.config.colorCodeTravelTime) {            
+      if (this.config.colorCodeTravelTime) {
         if (variance > this.config.poorTimeThreshold) {
           timeEl.classList.add("status-poor");
         } else if (variance > this.config.moderateTimeThreshold) {
@@ -301,7 +316,8 @@ Module.register('MMM-MyCommute', {
       }
 
     } else {
-      timeEl.innerHTML = moment.duration(Number(time), "seconds").format(this.config.travelTimeFormat, {trim: this.config.travelTimeFormatTrim});
+      timeEl.innerHTML = Math.floor( Number(time) /60) + " min";
+      //timeEl.innerHTML = moment.duration(Number(time), "seconds").format(this.config.travelTimeFormat, {trim: this.config.travelTimeFormatTrim});
       timeEl.classList.add("status-good");
     }
 
@@ -330,7 +346,7 @@ Module.register('MMM-MyCommute', {
 
   buildTransitSummary: function(transitInfo, summaryContainer) {
 
-    for (var i = 0; i < transitInfo.length; i++) {    
+    for (var i = 0; i < transitInfo.length; i++) {
 
       var transitLeg = document.createElement("span");
         transitLeg.classList.add('transit-leg');
@@ -340,7 +356,8 @@ Module.register('MMM-MyCommute', {
         routeNumber.innerHTML = transitInfo[i].routeLabel;
 
       if (transitInfo[i].arrivalTime) {
-        routeNumber.innerHTML = routeNumber.innerHTML + " (" + moment(transitInfo[i].arrivalTime).format(this.config.nextTransitVehicleDepartureFormat) + ")";
+        routeNumber.innerHTML = routeNumber.innerHTML + " (" + transitInfo[i].arrivalTime + ")";
+        //routeNumber.innerHTML = routeNumber.innerHTML + " (" + moment(transitInfo[i].arrivalTime).format(this.config.nextTransitVehicleDepartureFormat) + ")";
       }
 
       transitLeg.appendChild(routeNumber);
@@ -353,7 +370,7 @@ Module.register('MMM-MyCommute', {
   getDom: function() {
 
     var wrapper = document.createElement("div");
-    
+
     if (this.loading) {
       var loading = document.createElement("div");
         loading.innerHTML = this.translate("LOADING");
@@ -408,7 +425,7 @@ Module.register('MMM-MyCommute', {
           if (r.transitInfo) {
 
             symbolIcon = this.getTransitIcon(p.config,r);
-            this.buildTransitSummary(r.transitInfo, summary); 
+            this.buildTransitSummary(r.transitInfo, summary);
 
           } else {
             summary.innerHTML = r.summary;
@@ -434,7 +451,7 @@ Module.register('MMM-MyCommute', {
 
           if (r.transitInfo) {
             symbolIcon = this.getTransitIcon(p.config,r);
-            this.buildTransitSummary(r.transitInfo, summary); 
+            this.buildTransitSummary(r.transitInfo, summary);
 
           } else {
             summary.innerHTML = r.summary;
@@ -442,20 +459,20 @@ Module.register('MMM-MyCommute', {
           routeSummaryOuter.appendChild(summary);
           row.appendChild(routeSummaryOuter);
 
-        } 
+        }
 
       }
 
 
 
 
-      
+
 
       var svg = this.svgIconFactory(symbolIcon);
       icon.appendChild(svg);
       row.appendChild(icon);
-      
-      
+
+
 
       wrapper.appendChild(row);
     }
@@ -463,7 +480,7 @@ Module.register('MMM-MyCommute', {
 
     return wrapper;
   },
-  
+
   socketNotificationReceived: function(notification, payload) {
     if ( notification === 'GOOGLE_TRAFFIC_RESPONSE' + this.identifier ) {
 
@@ -479,7 +496,7 @@ Module.register('MMM-MyCommute', {
         }
       } else {
         this.updateDom();
-        this.show(1000, {lockString: this.identifier});        
+        this.show(1000, {lockString: this.identifier});
       }
       this.isHidden = false;
     }
